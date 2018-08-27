@@ -16,10 +16,13 @@ starts = []
 ends = []
 sources = []
 with open('files_info.txt', 'w') as run_file:
+    #get info about digicampipe version
     digicampipe_branch = subprocess.check_output("cd /home/reniery/ctasoft/digicampipe; git branch | grep \* | cut -d ' ' -f2", shell=True).decode('utf-8').strip('\n')
     digicampipe_commit = subprocess.check_output("cd /home/reniery/ctasoft/digicampipe; git rev-parse HEAD", shell=True).decode('utf-8').strip('\n')
+    #get info about the monitoring pipeline version
     pipeline_branch =  subprocess.check_output("cd /home/reniery/cron; git branch | grep \* | cut -d ' ' -f2", shell=True).decode('utf-8').strip('\n')
     pipeline_commit = subprocess.check_output("cd /home/reniery/cron; git rev-parse HEAD", shell=True).decode('utf-8').strip('\n')
+    #write header of files_info.txt
     run_file.write("#digicampipe branch " + digicampipe_branch+ " commit " + digicampipe_commit + "\n")
     run_file.write("#protozfits version " + protozfits.__version__ + '\n')
     run_file.write("#monitoring pipeline branch " + pipeline_branch + " commit " + pipeline_commit + "\n")
