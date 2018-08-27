@@ -1,6 +1,8 @@
 from astropy.io import fits
 import numpy as np
 import sys
+import subprocess
+import protozfits
 
 #from a list of zfit files determine the runs, output as
 # "source", dark_file, datafile1, datafile2, ..., 
@@ -14,6 +16,17 @@ starts = []
 ends = []
 sources = []
 with open('files_info.txt', 'w') as run_file:
+    old_path=$PWD
+    cd /home/reniery/ctasoft/digicampipe
+    digicampipe_branch = subprocess.check_output("git branch | grep \* | cut -d ' ' -f2", shell=True).decode('utf-8').strip('\n')
+    digicampipe_commit = subprocess.check_output("git rev-parse HEAD", shell=True).decode('utf-8').strip('\n')
+    cd /home/reniery/cron
+    pipeline_branch =  subprocess.check_output("git branch | grep \* | cut -d ' ' -f2", shell=True).decode('utf-8').strip('\n')
+    pipeline_commit = subprocess.check_output("git rev-parse HEAD", shell=True).decode('utf-8').strip('\n')
+    cd $old_path
+    run_file.write("#digicampipe branch " + digicampipe_branch+ " commit " + digicampipe_commit + "\n")
+    run_file.write("#protozfits version " + protozfits.__version__ + '\n')
+    run_file.write("#monitoring pipeline branch " + pipeline_branch + " commit " + pipeline_commit + "\n")
     run_file.write("#file type start end source\n")
     for f in files:
         with fits.open(f) as hdul:
