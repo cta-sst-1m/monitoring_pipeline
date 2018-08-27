@@ -1,6 +1,7 @@
 #!/bin/bash
 #Cron job to pre-analyse and check quality of last night data.
 
+
 source /etc/profile.d/z00_lmod.sh
 module load GCC/6.4.0-2.28 OpenMPI/2.1.2 TensorFlow/1.7.0-Python-3.6.4
 
@@ -34,7 +35,7 @@ else
     exit
 fi
 
-raw_files=$(find ${files_dir}*)
+raw_files=$(find ${files_dir}* | grep ".fits.fz")
 
 dest_dir="/home/reniery/cron/${year}/${month}/${day}"
 mkdir -p ${dest_dir}

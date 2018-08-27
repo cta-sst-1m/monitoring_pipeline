@@ -76,7 +76,7 @@ for i, f in enumerate(files):
                 dark_runs.append(latest_dark_run)
                 source_runs.append(sources[i])
     else:
-        sys.stderr.write('WARNING: ' + f + ' has unkown type: "' + types[i] + '"\n')
+        sys.stderr.write('WARNING: ' + f + ' has unkown type: "' + str(types[i]) + '"\n')
 # format output
 for run_idx, run in enumerate(runs):
     if len(run) == 0:
