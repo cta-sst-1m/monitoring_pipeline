@@ -16,6 +16,10 @@ test_pipeline.sh is the script launched by cron.
 
 get_runs.py is taking the path to data files and determine the runs based on the run type and sources of the fits files.
 
-launch_test_pipeline.sh is responsible to sending the jobs for a run.
+launch_analyze_run.sbatch is the script executed by the jobs analysing hillas for a run.
+
+launch_data_quality.sbatch is the script executed by the jobs analysing data quality for a run.
+
+launch_trigger_uniformity.sbatch is the script executed by the jobs analysing the trigger uniformity for a run.
 
 recompute_all.sh is running the pipeline on all data (many jobs may be created!).
