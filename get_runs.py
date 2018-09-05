@@ -4,9 +4,9 @@ import sys
 import subprocess
 import protozfits
 
-#from a list of zfit files determine the runs, output as
-# "source", dark_file, datafile1, datafile2, ..., 
-
+#From a list of zfit files determine the runs, output as:
+#dark_file1 dark_file2 ...,datafile1 datafile2 ...
+#Note the comma separating the dark_files and the data_files
 if len(sys.argv) < 2:
     sys.stderr.write('list of zfit files must be passed as argument.\n')
 files = sys.argv[1:]
@@ -49,19 +49,23 @@ with open('files_info.txt', 'w') as run_file:
             run_file.write("{} {} {} {} {}\n".format(f, t, start, end, source))
 # create runs
 previous_file_is_dark = False
-latest_dark_run = None
+dark_run = []
 dark_runs = []
 source_runs = []
 runs = [[]]
 for i, f in enumerate(files):
     if types[i] == "darkrun":
-        latest_dark_run = i
-        # a new darkrun starts a new run if last one is not empty
-        if len(runs[-1]) != 0:
-            runs.append([])
+        # a new darkrun starts a new run if last run is not empty
+        if not previous_file_is_dark:
+            if len(runs[-1]) != 0:
+                runs.append([])
+            dark_run = []
+        dark_run.append(i)
+        previous_file_is_dark = True
     elif types[i] == 'science':
+        previous_file_is_dark = False
         # science runs must have a dark run taken sometime before
-        if latest_dark_run is None:
+        if len(dark_run) == 0:
             sys.stderr.write('WARNING: ' + f + ' is science without previous dark run, skipping it!\n')
             continue
         if sources[i] is None:
@@ -72,31 +76,59 @@ for i, f in enumerate(files):
             else:
                 runs[-1].append(i)
             runs.append([])
-            dark_runs.append(latest_dark_run)
+            dark_runs.append(dark_run)
             source_runs.append('None')
         else:
+            # if first defined source, start a new run
+            if len(source_runs) == 0:
+                if len(runs[-1]) != 0:
+                    runs.append([i])
+                else:
+                    runs[-1].append(i)
+                dark_runs.append(dark_run)
             # if the source is the same as before, continue the run
-            if source_runs[-1] == sources[i]:
+            elif source_runs[-1] == sources[i]:
                 runs[-1].append(i)
+                # no dark run added here as we make a run longer
             # otherwise start a new run
             elif len(runs[-1]) != 0:
                 runs.append([i])
-                dark_runs.append(latest_dark_run)
-                source_runs.append(sources[i])
+                dark_runs.append(dark_run)
             else:
                 runs[-1].append(i)
-                dark_runs.append(latest_dark_run)
-                source_runs.append(sources[i])
+                dark_runs.append(dark_run)
+            source_runs.append(sources[i])
     else:
         sys.stderr.write('WARNING: ' + f + ' has unkown type: "' + str(types[i]) + '"\n')
+if len(runs) == 0:
+    sys.stderr.write('ERROR: empty list of runs.\n')
+    exit()
+
+if len(runs[-1]) == 0:
+    # remove last empty run
+    runs = runs[:-1]
+
+#print('runs (', len(runs), '):')
+#for i, run in enumerate(runs):
+#    print(i+1, run)
+#print('dark_runs (', len(dark_runs), '):')
+#for i, dark in enumerate(dark_runs):
+#    print(i+1, dark)
+
+assert len(runs) == len(dark_runs)
+
 # format output
 for run_idx, run in enumerate(runs):
     if len(run) == 0:
-        sys.stderr.write('ERROR: run with no science, check files_info.txt, skiping that run.\n')
+        sys.stderr.write('ERROR: run ' + str(run_idx) + ' with no science, check files_info.txt, skiping that run.\n')
         continue
     dark_run = dark_runs[run_idx]
-    #sys.stdout.write('"' + source_runs[run_idx] + '", ' + files[dark_run] + ', ')
-    sys.stdout.write(files[dark_run] + ', ')
+    dark_run_files = [files[dark_run_idx] for dark_run_idx in dark_run]
+    dark_run_files_str = ""
+    for filename in dark_run_files:
+        dark_run_files_str += filename + ' '
+    dark_run_files_str = dark_run_files_str[:-1]
+    sys.stdout.write(dark_run_files_str + ', ')
     for file_idx in range(len(run)):
-        sys.stdout.write(files[run[file_idx]] + ', ')
+        sys.stdout.write(files[run[file_idx]] + ' ')
     sys.stdout.write('\n')
