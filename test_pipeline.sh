@@ -12,43 +12,20 @@
 source /etc/profile.d/z00_lmod.sh
 module load GCC/6.4.0-2.28 OpenMPI/2.1.2 TensorFlow/1.7.0-Python-3.6.4
 
-year=""
-month=""
-day=""
-if [[ $# == 0 ]]; then
-    year=$(ls /sst1m/raw/ -t| head -n 1);
-    year_dir="/sst1m/raw/${year}/";
-    month=$(ls ${year_dir} -t| head -n 1);
-    month_dir="${year_dir}$month/";
-    day=$(ls ${month_dir} -t | head -n 1);
-    day_dir="${month_dir}$day/";
-    files_dir="${day_dir}$(ls ${day_dir} -t| head -n 1)/";
-    echo "no path given, using last directory: ${files_dir}";
-elif [[ $# == 1 ]]; then
-    files_dir=$1;
-    #keep only the part with the date
-    date_dir=$(echo $files_dir | sed 's|.*/\(20[0-9]\{2\}/[0-9]\{2\}/[0-9]\{2\}\)/\?.*|\1|' | tr -s '/' ' ');
-    read -r -a array <<< "${date_dir}";
-    year=${array[0]};
-    month=${array[1]};
-    day=${array[2]};
-    echo "extracting date form path $files_dir";
-    echo "year: $year";
-    echo "month: $month";
-    echo "day: $day";
-else
-    echo "error: $# arguments";
-    echo "usage: $0 path_to_zfits";
-    exit;
-fi
+# get path of the monitoring pipeline, data location and digicampipe
+source /home/reniery/cron/monitoring_setup.sh
+
+#get date and data path 
+. ${monitoring_dir}/get_data_dir.sh $@ 
 
 raw_files=$(find ${files_dir}* | grep ".fits.fz" |sort);
 
-dest_dir="/home/reniery/cron/${year}/${month}/${day}";
+dest_dir="${monitoring_dir}/${year}/${month}/${day}";
 mkdir -p ${dest_dir}/batch_output;
 
 cd ${dest_dir};
-runs=$(python /home/reniery/cron/get_runs.py ${raw_files});
+echo "analyzing zfits headers to get the type of runs and sources"
+runs=$(python ${monitoring_dir}/get_runs.py ${raw_files});
 
 run=0
 echo "#run_idx dark_file param_file analyze_log output_dir files"> ${dest_dir}/runs.txt
@@ -99,22 +76,28 @@ while read -r line; do
     rate_plot="${dest_dir}/rate_${year}_${month}_${day}_run${run}.png";
     baseline_plot="${dest_dir}/baseline_${year}_${month}_${day}_run${run}.png";
     time_step=1e9;
-    sbatch /home/reniery/cron/launch_data_quality.sbatch ${run} ${dark_file} ${output_fits} ${output_hist} ${rate_plot} ${baseline_plot} ${time_step} ${param_file} ${files};
+    sbatch ${monitoring_dir}/launch_data_quality.sbatch ${run} ${dark_file} ${output_fits} ${output_hist} ${rate_plot} ${baseline_plot} ${time_step} ${param_file} ${files};
    
     # trigger uniformity
     echo "runing trigger uniformity"
     uniformity_plot="${dest_dir}/trigger_uniformity_${year}_${month}_${day}_run${run}.png";
-    sbatch /home/reniery/cron/launch_trigger_uniformity.sbatch ${uniformity_plot} ${files};
+    sbatch ${monitoring_dir}/launch_trigger_uniformity.sbatch ${uniformity_plot} ${files};
 
     # analyze data
     echo "running pipeline";
     output_file="${dest_dir}/hillas_${year}_${month}_${day}_run${run}.fits";
-    sbatch /home/reniery/cron/launch_analyze_run.sbatch ${run} ${dark_file} ${param_file} ${output_file} ${files};
+    sbatch ${monitoring_dir}/launch_analyze_run.sbatch ${run} ${dark_file} ${param_file} ${output_file} ${files};
 
     echo "${run} ${dark_file} ${param_file} ${output_file} ${files}">>${dest_dir}/runs.txt;
 done <<< "$runs"
 
-# trigger uniformity for all data files
-echo "runing trigger uniformity for all shift: $all_files";
-uniformity_plot="${dest_dir}/trigger_uniformity_${year}_${month}_${day}_all.png";
-sbatch /home/reniery/cron/launch_trigger_uniformity.sbatch ${uniformity_plot} ${all_files};
+if [[ $run > 1 ]]; then 
+    # trigger uniformity for all data files
+    echo "runing trigger uniformity for all shift: $all_files";
+    uniformity_plot="${dest_dir}/trigger_uniformity_${year}_${month}_${day}_all.png";
+    sbatch ${monitoring_dir}/launch_trigger_uniformity.sbatch ${uniformity_plot} ${all_files};
+fi
+
+#get bursts
+echo "runing get burst on $files_dir folder"
+sbatch ${monitoring_dir}/get_bursts.sh $files_dir

@@ -7,6 +7,10 @@ import protozfits
 #From a list of zfit files determine the runs, output as:
 #dark_file1 dark_file2 ...,datafile1 datafile2 ...
 #Note the comma separating the dark_files and the data_files
+
+digicampipe_dir = '/home/reniery/ctasoft/digicampipe'
+monitoring_dir = "/home/reniery/cron/"
+
 if len(sys.argv) < 2:
     sys.stderr.write('list of zfit files must be passed as argument.\n')
 files = sys.argv[1:]
@@ -17,36 +21,56 @@ ends = []
 sources = []
 with open('files_info.txt', 'w') as run_file:
     #get info about digicampipe version
-    digicampipe_branch = subprocess.check_output("cd /home/reniery/ctasoft/digicampipe; git branch | grep \* | cut -d ' ' -f2", shell=True).decode('utf-8').strip('\n')
-    digicampipe_commit = subprocess.check_output("cd /home/reniery/ctasoft/digicampipe; git rev-parse HEAD", shell=True).decode('utf-8').strip('\n')
+    digicampipe_branch = subprocess.check_output("cd " + digicampipe_dir +"; git branch | grep \* | cut -d ' ' -f2", shell=True).decode('utf-8').strip('\n')
+    digicampipe_commit = subprocess.check_output("cd " + digicampipe_dir +"; git rev-parse HEAD", shell=True).decode('utf-8').strip('\n')
     #get info about the monitoring pipeline version
-    pipeline_branch =  subprocess.check_output("cd /home/reniery/cron; git branch | grep \* | cut -d ' ' -f2", shell=True).decode('utf-8').strip('\n')
-    pipeline_commit = subprocess.check_output("cd /home/reniery/cron; git rev-parse HEAD", shell=True).decode('utf-8').strip('\n')
+    pipeline_branch =  subprocess.check_output("cd " + monitoring_dir + "; git branch | grep \* | cut -d ' ' -f2", shell=True).decode('utf-8').strip('\n')
+    pipeline_commit = subprocess.check_output("cd " + monitoring_dir + "; git rev-parse HEAD", shell=True).decode('utf-8').strip('\n')
     #write header of files_info.txt
     run_file.write("#digicampipe branch " + digicampipe_branch+ " commit " + digicampipe_commit + "\n")
     run_file.write("#protozfits version " + protozfits.__version__ + '\n')
     run_file.write("#monitoring pipeline branch " + pipeline_branch + " commit " + pipeline_commit + "\n")
     run_file.write("#file type start end source\n")
     for f in files:
-        with fits.open(f) as hdul:
-            t = None
-            start = None
-            end = None
-            source = None
-            for hdu in hdul:
-                if 'RUNTYPE' in hdu.header.keys():
-                    t = hdu.header['RUNTYPE']
-                if 'DATE' in hdu.header.keys():
-                    start = hdu.header['DATE']
-                if 'DATEEND' in hdu.header.keys():
-                    end = hdu.header['DATEEND']
-                if 'TARGET' in hdu.header.keys():
-                    source = hdu.header['TARGET']
-            types.append(t)
-            starts.append(start)
-            ends.append(end)
-            sources.append(source)
-            run_file.write("{} {} {} {} {}\n".format(f, t, start, end, source))
+        try:
+            with fits.open(f) as hdul:
+                t = None
+                start = None
+                end = None
+                source = None
+                for hdu in hdul:
+                    if 'RUNTYPE' in hdu.header.keys():
+                        t = hdu.header['RUNTYPE']
+                    if 'DATE' in hdu.header.keys():
+                        start = hdu.header['DATE']
+                    if 'DATEEND' in hdu.header.keys():
+                        end = hdu.header['DATEEND']
+                    if 'TARGET' in hdu.header.keys():
+                        source = hdu.header['TARGET']
+                types.append(t)
+                starts.append(start)
+                ends.append(end)
+                sources.append(source)
+                run_file.write("{} {} {} {} {}\n".format(f, t, start, end, source))
+        except (OSError, PermissionError) as err:
+            print('WARNING: file', f, 'skipped due to:', err)
+            if t:
+                types.append(t)
+            else:
+                types.append("none")
+            if start:
+                starts.append(start)
+            else:
+                starts.append("")
+            if end:
+                ends.append(end)
+            else:
+                ends.append("")
+            if source:
+                sources.append(source)
+            else:
+                sources.append("none")
+            continue
 # create runs
 previous_file_is_dark = False
 dark_run = []

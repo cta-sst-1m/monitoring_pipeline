@@ -1,12 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=data_quality
-#SBATCH --time=4:00:00
+#SBATCH --time=8:00:00
 #SBATCH --partition=mono,dpnc
 #SBATCH --output=batch_output/data_quality-%J.out
 #SBATCH --ntasks=1
 #SBATCH --mem=4G
 
 module load GCC/6.4.0-2.28 OpenMPI/2.1.2 TensorFlow/1.7.0-Python-3.6.4
+source /home/reniery/cron/monitoring_setup.sh
 
 # we remove arguments after reading them to only keep the list of files at the end
 run=$1
@@ -26,6 +27,7 @@ shift
 param_file=$1
 shift
 files=$@
+template_file="digicampipe/tests/resources/pulse_SST-1M_pixel_0.dat"
 
 echo "run: $run"
 echo "dark_file: $dark_file"
@@ -42,9 +44,9 @@ if [ -z "$files" ]; then
     exit
 fi
 
-cd /home/reniery/ctasoft/digicampipe/
+cd ${digicampipe_dir}
 
-echo "python -u digicampipe/scripts/data_quality.py --dark_filename=${dark_file} --output-fits=${output_fits} --output-hist=${output_hist} --rate_plot=${rate_plot} --baseline_plot=${baseline_plot} --time_step=${time_step} --parameters=${param_file} ${files}"
+echo "python -u digicampipe/scripts/data_quality.py --dark_filename=${dark_file} --output-fits=${output_fits} --output-hist=${output_hist} --rate_plot=${rate_plot} --baseline_plot=${baseline_plot} --time_step=${time_step} --parameters=${param_file} --template=${template_file} ${files}"
 
- python -u digicampipe/scripts/data_quality.py --dark_filename=${dark_file} --output-fits=${output_fits} --output-hist=${output_hist} --rate_plot=${rate_plot} --baseline_plot=${baseline_plot} --time_step=${time_step} --parameters=${param_file} ${files}
+ python -u digicampipe/scripts/data_quality.py --dark_filename=${dark_file} --output-fits=${output_fits} --output-hist=${output_hist} --rate_plot=${rate_plot} --baseline_plot=${baseline_plot} --time_step=${time_step} --parameters=${param_file} --template=${template_file} ${files}
 

@@ -1,12 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=hillas_compute
-#SBATCH --time=8:00:00
+#SBATCH --time=16:00:00
 #SBATCH --partition=mono,dpnc
 #SBATCH --output=batch_output/hillas_compute-%J.out
 #SBATCH --ntasks=1
 #SBATCH --mem=4G
 
 module load GCC/6.4.0-2.28 OpenMPI/2.1.2 TensorFlow/1.7.0-Python-3.6.4
+source /home/reniery/cron/monitoring_setup.sh
 
 # we remove arguments after reading them to only keep the list of files at the end
 run=$1
@@ -18,6 +19,7 @@ shift
 output_file=$1
 shift
 files=$@
+template_file="digicampipe/tests/resources/pulse_SST-1M_pixel_0.dat"
 
 echo "run: $run"
 echo "dark_file: $dark_file"
@@ -30,8 +32,8 @@ if [ -z "$files" ]; then
     exit
 fi
 
-cd /home/reniery/ctasoft/digicampipe/
+cd ${digicampipe_dir}
 
-python -u digicampipe/scripts/pipeline.py -o ${output_file} --dark ${dark_file} --parameters=${param_file} -c ${files} 
+python -u digicampipe/scripts/pipeline.py -o ${output_file} --dark ${dark_file} --parameters=${param_file} --template=${template_file} -c ${files} 
 
 

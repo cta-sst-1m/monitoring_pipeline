@@ -1,12 +1,15 @@
 #!/bin/bash
 #SBATCH --job-name=trigger_uniformity
-#SBATCH --time=2:00:00
+#SBATCH --time=8:00:00
 #SBATCH --partition=mono,dpnc
 #SBATCH --output=batch_output/trigger_uniformity-%J.out
 #SBATCH --ntasks=1
 #SBATCH --mem=2G
 
 module load GCC/6.4.0-2.28 OpenMPI/2.1.2 TensorFlow/1.7.0-Python-3.6.4
+
+# get path of the monitoring pipeline, data location and digicampipe
+source /home/reniery/cron/monitoring_setup.sh
 
 # we remove arguments after reading them to only keep the list of files at the end
 uniformity_plot=$1
@@ -21,7 +24,7 @@ if [ -z "$files" ]; then
     exit
 fi
 
-cd /home/reniery/ctasoft/digicampipe/
+cd ${digicampipe_dir}
 
 echo "python -u digicampipe/scripts/trigger_uniformity.py --plot=${uniformity_plot} ${files}"
 
