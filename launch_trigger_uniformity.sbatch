@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=trigger_uniformity
-#SBATCH --time=8:00:00
+#SBATCH --time=12:00:00
 #SBATCH --partition=mono,dpnc
 #SBATCH --output=batch_output/trigger_uniformity-%J.out
 #SBATCH --ntasks=1
@@ -26,6 +26,8 @@ fi
 
 cd ${digicampipe_dir}
 
-echo "python -u digicampipe/scripts/trigger_uniformity.py --plot=${uniformity_plot} ${files}"
+echo "python -u digicampipe/scripts/trigger_uniformity.py --plot=${uniformity_plot} --disable_bar ${files}"
 
-python -u digicampipe/scripts/trigger_uniformity.py --plot=${uniformity_plot} ${files}
+python -u digicampipe/scripts/trigger_uniformity.py --plot=${uniformity_plot} --disable_bar ${files}
+
+echo "done"

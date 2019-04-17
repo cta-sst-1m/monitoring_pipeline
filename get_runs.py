@@ -19,6 +19,7 @@ types = []
 starts = []
 ends = []
 sources = []
+skip_files = np.zeros(len(files), dtype=bool)
 with open('files_info.txt', 'w') as run_file:
     #get info about digicampipe version
     digicampipe_branch = subprocess.check_output("cd " + digicampipe_dir +"; git branch | grep \* | cut -d ' ' -f2", shell=True).decode('utf-8').strip('\n')
@@ -31,7 +32,7 @@ with open('files_info.txt', 'w') as run_file:
     run_file.write("#protozfits version " + protozfits.__version__ + '\n')
     run_file.write("#monitoring pipeline branch " + pipeline_branch + " commit " + pipeline_commit + "\n")
     run_file.write("#file type start end source\n")
-    for f in files:
+    for i, f in enumerate(files):
         try:
             with fits.open(f) as hdul:
                 t = None
@@ -53,7 +54,8 @@ with open('files_info.txt', 'w') as run_file:
                 sources.append(source)
                 run_file.write("{} {} {} {} {}\n".format(f, t, start, end, source))
         except (OSError, PermissionError) as err:
-            print('WARNING: file', f, 'skipped due to:', err)
+            sys.stderr.write('WARNING: file' + f + 'skipped due to:' + err)
+            skip_files[i] = True
             if t:
                 types.append(t)
             else:
@@ -71,6 +73,13 @@ with open('files_info.txt', 'w') as run_file:
             else:
                 sources.append("none")
             continue
+
+files = np.array(files)[~skip_files]
+types = np.array(types)[~skip_files]
+starts = np.array(starts)[~skip_files]
+ends = np.array(ends)[~skip_files]
+sources = np.array(sources)[~skip_files]
+
 # create runs
 previous_file_is_dark = False
 dark_run = []
@@ -103,6 +112,10 @@ for i, f in enumerate(files):
             dark_runs.append(dark_run)
             source_runs.append('None')
         else:
+            n_run = len(runs)
+            #if len(runs[-1]) == 0:
+            #    n_run -=1
+            n_sources = len(source_runs)
             # if first defined source, start a new run
             if len(source_runs) == 0:
                 if len(runs[-1]) != 0:
@@ -110,20 +123,24 @@ for i, f in enumerate(files):
                 else:
                     runs[-1].append(i)
                 dark_runs.append(dark_run)
+                source_runs.append(sources[i])
             # if the source is the same as before, continue the run
-            elif source_runs[-1] == sources[i]:
+            elif n_sources == n_run and source_runs[-1] == sources[i]:
                 runs[-1].append(i)
-                # no dark run added here as we make a run longer
+                # no dark run or source added here as we make a run longer
             # otherwise start a new run
             elif len(runs[-1]) != 0:
                 runs.append([i])
                 dark_runs.append(dark_run)
+                source_runs.append(sources[i])
             else:
                 runs[-1].append(i)
                 dark_runs.append(dark_run)
-            source_runs.append(sources[i])
+                source_runs.append(sources[i])
     else:
+        previous_file_is_dark = False
         sys.stderr.write('WARNING: ' + f + ' has unkown type: "' + str(types[i]) + '"\n')
+
 if len(runs) == 0:
     sys.stderr.write('ERROR: empty list of runs.\n')
     exit()
@@ -138,8 +155,12 @@ if len(runs[-1]) == 0:
 #print('dark_runs (', len(dark_runs), '):')
 #for i, dark in enumerate(dark_runs):
 #    print(i+1, dark)
+#print('source_runs (', len(source_runs), '):')
+#for i, source in enumerate(source_runs):
+#    print(i+1, source)
 
 assert len(runs) == len(dark_runs)
+assert len(runs) == len(source_runs)
 
 # format output
 for run_idx, run in enumerate(runs):

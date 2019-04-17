@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=hillas_compute
-#SBATCH --time=16:00:00
-#SBATCH --partition=mono,dpnc
+#SBATCH --time=1:30:00
+#SBATCH --partition=mono,dpnc,mono-shared
 #SBATCH --output=batch_output/hillas_compute-%J.out
 #SBATCH --ntasks=1
 #SBATCH --mem=4G
@@ -18,6 +18,12 @@ param_file=$1
 shift
 output_file=$1
 shift
+thr1=$1
+shift
+thr2=$1
+shift
+events_example_file=$1
+shift
 files=$@
 template_file="digicampipe/tests/resources/pulse_SST-1M_pixel_0.dat"
 
@@ -25,6 +31,9 @@ echo "run: $run"
 echo "dark_file: $dark_file"
 echo "param_file: $param_file"
 echo "output_file: $output_file"
+echo "picture_threshold: $thr1"
+echo "boundary_threshold: $thr2"
+echo "events_example_file: $events_example_file"
 echo "files: $files"
 
 if [ -z "$files" ]; then
@@ -34,6 +43,7 @@ fi
 
 cd ${digicampipe_dir}
 
-python -u digicampipe/scripts/pipeline.py -o ${output_file} --dark ${dark_file} --parameters=${param_file} --template=${template_file} -c ${files} 
-
-
+python -u digicampipe/scripts/pipeline.py -o ${output_file} --dark ${dark_file} --parameters=${param_file} --template=${template_file} --disable_bar ${files} --picture_threshold=${thr1} --boundary_threshold=${thr2} --event_plot_filename=$events_example_file --apply_corr_factor --wdw_number=1
+return_value=$?
+echo "done"
+exit ${return_value}

@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 import matplotlib.dates as mdates
 
 dir_slow = "/sst1m/aux/"
-monitoring_dir = "/home/reniery/cron/"
+monitoring_dir = "/sst1m/analyzed/2018"
 
 # get all files_info.txt files recusirvely in monitoring_dir
 files_info = []
@@ -20,6 +20,7 @@ for dirpath, dirnames, files in os.walk(monitoring_dir):
     for name in files:
         if name.lower() == "files_info.txt":
             files_info.append(os.path.join(dirpath, name))
+print('found', len(files_info), 'days with data files')
 
 # setup regexp to parse files_info.txt
 zfits_re = "(?P<zfits>[^ ]+)"
@@ -86,6 +87,7 @@ elapsed_files = elapsed_files[unique_idx]
 source_files = source_files[unique_idx]
 
 # TEMPORAY HACK ! set all missing sources as 1ES 1959+650
+"""
 source_files_new = []
 for source in source_files:
     if source.lower() == "none":
@@ -93,7 +95,7 @@ for source in source_files:
     else:
         source_files_new.append(source)
 source_files = np.array(source_files_new)
-
+"""
 # maxout the duration of a file to 5 min. Needed as some file have large gaps
 elapsed_files[elapsed_files > 300] = 300
 

@@ -19,7 +19,7 @@ source /home/reniery/cron/monitoring_setup.sh
 
 raw_files=$(find ${files_dir}* | grep ".fits.fz" |sort);
 
-dest_dir="${monitoring_dir}/${year}/${month}/${day}";
+dest_dir="${analyzed_dir}/${year}/${month}/${day}";
 mkdir -p ${dest_dir}/batch_output;
 
 cd ${dest_dir};

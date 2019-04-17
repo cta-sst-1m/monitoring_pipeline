@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=bursts
-#SBATCH --time=8:00:00
+#SBATCH --time=12:00:00
 #SBATCH --partition=mono,dpnc
 #SBATCH --output=batch_output/bursts-%J.out
 #SBATCH --ntasks=1
@@ -20,7 +20,7 @@ source /home/reniery/cron/monitoring_setup.sh
 
 raw_files=$(find ${files_dir}* | grep ".fits.fz" |sort);
 
-dest_dir="${monitoring_dir}/${year}/${month}/${day}";
+dest_dir="${analyzed_dir}/${year}/${month}/${day}";
 mkdir -p ${dest_dir}/batch_output;
 
 cd ${dest_dir};
@@ -42,5 +42,6 @@ cd ${digicampipe_dir};
 plot_baseline="${dest_dir}/baseline_${year}${month}${day}_all.png"
 output_file="${dest_dir}/bursts_${year}${month}${day}.txt"
 video_prefix="${dest_dir}/burst_${year}${month}${day}"
-python digicampipe/scripts/get_burst.py --threshold_lsb=10.0 --plot_baseline=${plot_baseline} --output=${output_file} --video_prefix=${video_prefix} ${all_files};
-# python digicampipe/scripts/get_burst.py --threshold_lsb=10.0 --plot_baseline=${plot_baseline} ${all_files};
+#python digicampipe/scripts/get_burst.py --threshold_lsb=10.0 --plot_baseline=${plot_baseline} --output=${output_file} --video_prefix=${video_prefix} ${all_files};
+python digicampipe/scripts/get_burst.py --threshold_lsb=10.0 --plot_baseline=${plot_baseline} --output=${output_file} --video_prefix=none --disable_bar ${all_files};
+echo "done"
