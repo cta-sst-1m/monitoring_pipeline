@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=test_pipeline
-#SBATCH --time=0:15:00
-#SBATCH --partition=mono,dpnc,mono-shared,debug
+#SBATCH --time=1:30:00
+#SBATCH --partition=dpnc,mono
 #SBATCH --output=batch_output/test_pipeline-%J.out
 #SBATCH --ntasks=1
 #SBATCH --mem=2G
@@ -14,6 +14,9 @@ module load GCC/6.4.0-2.28 OpenMPI/2.1.2 TensorFlow/1.7.0-Python-3.6.4
 
 # get path of the monitoring pipeline, data location and digicampipe
 source /home/reniery/cron/monitoring_setup.sh
+
+#enable or diasable window correction
+window_correction=false
 
 #get date and data path 
 . ${monitoring_dir}/get_data_dir.sh $@ 
@@ -68,6 +71,7 @@ while read -r line; do
             # analyze dark run
             echo "runnig dark analysis:";
             dark_run=$(sbatch --parsable  ${monitoring_dir}/launch_dark_run.sbatch ${dark_file} ${dark});
+            sleep 0.1;
             echo "Submitted batch job ${dark_run}";
             dark_file_run=${dark_file}
         else
@@ -86,11 +90,13 @@ while read -r line; do
     baseline_plot="${dest_dir}/baseline_${year}_${month}_${day}_run${run_txt}.png";
     time_step=1e9;
     sbatch ${dark_run_dep} ${monitoring_dir}/launch_data_quality.sbatch ${run_txt} ${dark_file} ${output_fits} ${output_hist} ${rate_plot} ${baseline_plot} ${time_step} ${param_file} ${aux_dir} ${files};
+    sleep 0.1;
    
     # trigger uniformity
     echo "runing trigger uniformity"
     uniformity_plot="${dest_dir}/trigger_uniformity_${year}_${month}_${day}_run${run_txt}.png";
     sbatch ${monitoring_dir}/launch_trigger_uniformity.sbatch ${uniformity_plot} ${files};
+    sleep 0.1
 
     # analyze data
     echo "running pipeline";
@@ -99,7 +105,8 @@ while read -r line; do
             mkdir -p "${dest_dir}/thr${thr1}-${thr2}"
             output_file="${dest_dir}/thr${thr1}-${thr2}/hillas_${year}_${month}_${day}_run${run_txt}.fits";
             events_example_file="${dest_dir}/thr${thr1}-${thr2}/examples_${year}_${month}_${day}_run${run_txt}.png";
-            sbatch ${dark_run_dep} ${monitoring_dir}/launch_pipeline.sbatch ${run_txt} ${dark_file} ${param_file} ${output_file} $thr1 $thr2 ${events_example_file} ${files};
+            sbatch ${dark_run_dep} ${monitoring_dir}/launch_pipeline.sbatch ${run_txt} ${dark_file} ${param_file} ${output_file} $thr1 $thr2 ${events_example_file} ${window_correction} ${files};
+            sleep 0.1;
         done
     done
     echo "${run_txt} ${dark_file} ${param_file} ${output_file} ${files}">>${dest_dir}/runs.txt;
@@ -110,7 +117,7 @@ if [[ $run > 1 ]]; then
     echo "runing trigger uniformity for all shift: $all_files";
     uniformity_plot="${dest_dir}/trigger_uniformity_${year}_${month}_${day}_all.png";
     sbatch ${monitoring_dir}/launch_trigger_uniformity.sbatch ${uniformity_plot} ${all_files};
-    sleep 0.1
+    sleep 0.1;
 fi
 
 #get bursts

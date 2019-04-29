@@ -24,6 +24,8 @@ thr2=$1
 shift
 events_example_file=$1
 shift
+window_correction=$1
+shift
 files=$@
 template_file="digicampipe/tests/resources/pulse_SST-1M_pixel_0.dat"
 
@@ -43,7 +45,13 @@ fi
 
 cd ${digicampipe_dir}
 
-python -u digicampipe/scripts/pipeline.py -o ${output_file} --dark ${dark_file} --parameters=${param_file} --template=${template_file} --disable_bar ${files} --picture_threshold=${thr1} --boundary_threshold=${thr2} --event_plot_filename=$events_example_file --apply_corr_factor --wdw_number=1
+if $window_correction; then
+    corr="--apply_corr_factor --wdw_number=1"
+else
+    corr=""
+fi
+
+python -u digicampipe/scripts/pipeline.py -o ${output_file} --dark ${dark_file} --parameters=${param_file} --template=${template_file} --disable_bar ${files} --picture_threshold=${thr1} --boundary_threshold=${thr2} --event_plot_filename=$events_example_file $corr
 return_value=$?
 echo "done"
 exit ${return_value}

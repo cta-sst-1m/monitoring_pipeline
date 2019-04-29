@@ -24,6 +24,8 @@ thr2=$1
 shift
 events_example_file=$1
 shift
+window_correction=$1
+shift
 files=$@
 template_file="digicampipe/tests/resources/pulse_SST-1M_pixel_0.dat"
 
@@ -59,7 +61,7 @@ if (( $n_file > 1)); then
         filename_noext=${filename_nogz%.fits}
         out="${output_dir}/hillas_${filename_noext}.fits"
         echo "compute hillas for $file:"
-        hillas_run=$(sbatch --parsable ${monitoring_dir}/launch_analyze_run.sbatch $run $dark_file $param_file $out $thr1 $thr2 ${events_example_file} $file);
+        hillas_run=$(sbatch --parsable ${monitoring_dir}/launch_analyze_run.sbatch $run $dark_file $param_file $out $thr1 $thr2 ${events_example_file} ${window_correction} $file);
         # show example only for first file
         events_example_file="none"
         echo "Submitted batch job ${hillas_run}"
@@ -79,7 +81,7 @@ if (( $n_file > 1)); then
     echo "remove intermediate_outpouts with --dependency=afterok:${final_hillas_run}: "
     sbatch --dependency=afterok:${final_hillas_run} ${monitoring_dir}/launch_rm_temp.sbatch $intermediate_outpouts
 else
-    final_hillas_run=$(sbatch --parsable ${monitoring_dir}/launch_analyze_run.sbatch $run $dark_file $param_file $output_file $thr1 $thr2 ${events_example_file} $files)
+    final_hillas_run=$(sbatch --parsable ${monitoring_dir}/launch_analyze_run.sbatch $run $dark_file $param_file $output_file $thr1 $thr2 ${events_example_file} ${window_correction} $files)
     echo "Submitted batch job ${final_hillas_run}";
 fi
 
